@@ -21,10 +21,11 @@ class Player(BasePlayer):
     early_pct=0.05
     all_nodes_scalar=0.1
 
-    station=-1
-
     stations=[]
     station=-1
+    
+    order_tot=0
+    order_cnt = []
 
     def hub_f(self,n):
         return max(0,SCORE_MEAN-n*DECAY_FACTOR)
@@ -39,6 +40,7 @@ class Player(BasePlayer):
             for j in xrange(GRAPH_SIZE):
                 center+=self.hub_f(shortest[i][j])*self.all_nodes_scalar
             self.centeredness.append(center)
+            self.order_cnt.append(0)
 
     def hub_update(self, state):
         orders=state.get_pending_orders()
@@ -50,12 +52,32 @@ class Player(BasePlayer):
         if orders[curri].id>self.lastid: 
             #then we have a new order
             shortest=nx.shortest_path_length(G,orders[curri].node)
+            self.order_cnt[orders[curri].node]+=1
+            self.order_tot+=1
             for i in xrange(GRAPH_SIZE):
                 self.centeredness[i]+=self.hub_f(shortest[i])
                 
     def expected_end(self, state):
+        sum = 0.0
+        G = state.get_graph()
+        paths = nx.shortest_path_length(G)
+        for i in xrange(len(order_cnt)):
+            min_d = paths[stations[0]][i]
+            for j in xrange(len(stations)):
+                min_d = min(min_d,paths[stations[j]][i])
+            sum += (SCORE_MEAN-min_d*DECAY_FACTOR)*order_cnt[i]
+        sum /= order_tot
+        return sum
         
-        return
+    def can_add(self, state):
+        return state.get_money()-(INIT_BUILD_COST*BUILD_FACTOR**len(stations)) > 0.0
+        
+    def should_add(self, state, node):
+        before = expected_end(self,state)
+        order_cnt[i]+=1
+        after = expected_end(self,state)
+        order_cnt[i]-=1
+        return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(stations)) > 0.0
     
     def mid_best(self, state):
         c_out = 1
