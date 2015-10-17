@@ -5,7 +5,7 @@ def detOrder(self, state, Stations):
 	G = state.get_graph()
 
 	for edge in G.edges_iter():
-		if(edge['in_use'])
+		if(edge['in_use']):
 			n1 = edge[0]
 			n2 = edge[1]
 			G.remove_edge(n1,n2)
@@ -13,7 +13,7 @@ def detOrder(self, state, Stations):
 	listOrders = []
 
 	remaining_orders = state.get_pending_orders()
-	while(len(remaining_orders) != 0)
+	while(len(remaining_orders) != 0):
 		incomeDict = {}
 		for st in Stations:
 	        for order in remaining_orders:
@@ -26,6 +26,7 @@ def detOrder(self, state, Stations):
 		            DECAY_FACTOR
 		            incomeDict[max_Income] = (st,order);
 		     	except NetworkXError:
+		     		continue
 		     		# no possible paths
 	    if(incomeDict.len() == 0):
 	    	break
