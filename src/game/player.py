@@ -24,6 +24,7 @@ class Player(BasePlayer):
     station=-1
 
     stations=[]
+    station=-1
 
     def hub_f(self,n):
         return max(0,SCORE_MEAN-n*DECAY_FACTOR)
@@ -34,7 +35,7 @@ class Player(BasePlayer):
         self.edge_count = [len(nx.edges(G,[i])) for i in xrange(GRAPH_SIZE)]
         shortest=nx.shortest_path_length(G)
         for i in xrange(GRAPH_SIZE):
-            center=0
+            center=0.0
             for j in xrange(GRAPH_SIZE):
                 center+=self.hub_f(shortest[i][j])*self.all_nodes_scalar
             self.centeredness.append(center)
@@ -51,6 +52,30 @@ class Player(BasePlayer):
             shortest=nx.shortest_path_length(G,orders[curri].node)
             for i in xrange(GRAPH_SIZE):
                 self.centeredness[i]+=self.hub_f(shortest[i])
+                
+    def expected_end(self, state):
+        
+        return
+    
+    def mid_best(self, state):
+        c_out = 1
+        c_ev = 1
+        G = state.get_graph()
+        max_v = 0
+        max_n = -1
+        paths = nx.shortest_path_length(G)
+        for i in xrange(GRAPH_SIZE):
+            min_d = paths[stations[0]][i]
+            for j in xrange(len(stations)):
+                min_d = min(min_d,paths[stations[j]][i])
+            cur_v = 0.0
+            cur_v -= (c_ev*self.centerdness[i]*self.centerdness[i]+c_out*G.degree(i))/(min_d+1)
+            cur_v += c_out*G.degree(i)*ORDER_CHANCE
+            cur_v += c_ev*self.centerdness[i]*self.centerdness[i]/(ORDER_VAR*ORDER_VAR+1)
+            if (cur_v > max_v):
+                max_v = cur_v
+                max_n = id
+        return max_n
 
     def __init__(self, state):
         """
@@ -125,6 +150,7 @@ class Player(BasePlayer):
         self.hub_update(state)
 
         commands=[]
+        station = self.station
 
         commands_sent = 0
         pending_orders = state.get_pending_orders()
