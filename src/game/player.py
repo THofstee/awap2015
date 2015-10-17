@@ -21,6 +21,8 @@ class Player(BasePlayer):
     early_pct=0.05
     all_nodes_scalar=0.1
 
+    station=-1
+
     stations=[]
 
     def hub_f(self,n):
@@ -91,7 +93,6 @@ class Player(BasePlayer):
         # We recommend making it a bit smarter ;-)
 
         graph = state.get_graph()
-        station = -1
 
         self.hub_update(state)
 
@@ -106,21 +107,21 @@ class Player(BasePlayer):
                 for i in xrange(GRAPH_SIZE):
                     if self.centeredness[i]*self.edge_count[i]>self.centeredness[besti]*self.edge_count[besti]:
                         besti=i
-                commands.append(self.build_command(i))
-                self.stations.append(i)
-                station=i
+                commands.append(self.build_command(besti))
+                self.stations.append(besti)
+                self.station=besti
                 self.gamest=1
 
 
-        if len(pending_orders) != 0 and station>=0:
+        if len(pending_orders) != 0 and self.station>=0:
             min_length = sys.maxint
             min_path = None
             min_order = None
             for order in pending_orders:
-                cur_length = nx.shortest_path_length(graph, station, order.get_node())
+                cur_length = nx.shortest_path_length(graph, self.station, order.get_node())
                 if cur_length < min_length:
                     min_length = cur_length
-                    min_path = nx.shortest_path(graph, station, order.get_node())
+                    min_path = nx.shortest_path(graph, self.station, order.get_node())
                     min_order = order
             if self.path_is_valid(state, min_path):
                 commands.append(self.send_command(min_order, min_path))
