@@ -2,6 +2,7 @@ import networkx as nx
 import random
 from base_player import BasePlayer
 from settings import *
+import sys
 
 class Player(BasePlayer):
     """
@@ -11,6 +12,7 @@ class Player(BasePlayer):
 
     # You can set up static state here
     has_built_station = False
+    num_stations_built = 0
 
     def __init__(self, state):
         """
@@ -57,12 +59,22 @@ class Player(BasePlayer):
         if not self.has_built_station:
             commands.append(self.build_command(station))
             self.has_built_station = True
+            self.num_stations_built += 1
 
+        commands_sent = 0
         pending_orders = state.get_pending_orders()
-        if len(pending_orders) != 0:
-            order = random.choice(pending_orders)
-            path = nx.shortest_path(graph, station, order.get_node())
-            if self.path_is_valid(state, path):
-                commands.append(self.send_command(order, path))
 
+        if len(pending_orders) != 0:
+            min_length = sys.maxint
+            min_path = None
+            min_order = None
+            for order in pending_orders:
+                cur_length = nx.shortest_path_length(graph, station, order.get_node())
+                if cur_length < min_length:
+                    min_length = cur_length
+                    min_path = nx.shortest_path(graph, station, order.get_node())
+                    min_order = order
+            if self.path_is_valid(state, min_path):
+                commands.append(self.send_command(min_order, min_path))
+                
         return commands
