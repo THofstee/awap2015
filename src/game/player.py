@@ -12,19 +12,19 @@ class Player(BasePlayer):
     """
 
     # You can set up static state here
-    has_built_station = False
     hub_score = None
     edge_count = None
     centeredness = []
     lastid = -1
     gamest=0 #0 for early, 1 for mid, 2 for late
+
     early_pct=0.05
-    early_thresh=
+    all_nodes_scalar=0.1
 
     stations=[]
 
     def hub_f(self,n):
-        return 1.0/(n+1)
+        return max(0,SCORE_MEAN-n*DECAY_FACTOR)
 
     def hub_init(self,state): 
         self.hub_score = [0]*GRAPH_SIZE
@@ -34,7 +34,7 @@ class Player(BasePlayer):
         for i in xrange(GRAPH_SIZE):
             center=0
             for j in xrange(GRAPH_SIZE):
-                center+=max(0,SCORE_MEAN-shortest[i][j]*DECAY_FACTOR)
+                center+=hub_f(shortest[i][j])*self.all_nodes_scalar
             self.centeredness.append(center)
 
     def hub_update(self, state):
@@ -48,7 +48,7 @@ class Player(BasePlayer):
             #then we have a new order
             shortest=nx.shortest_path_length(G,orders[curri].node)
             for i in xrange(GRAPH_SIZE):
-                self.hub_score[i]+=self.hub_f(shortest[i])
+                self.center[i]+=self.hub_f(shortest[i])
 
     def __init__(self, state):
         """
@@ -94,13 +94,20 @@ class Player(BasePlayer):
         station = graph.nodes()[0]
 
         self.hub_update(state)
-        if not self.has_built_station:
-            commands.append(self.build_command(station))
-            self.has_built_station = True
-            self.num_stations_built += 1
+
+        commands=[]
 
         commands_sent = 0
         pending_orders = state.get_pending_orders()
+
+        if gamest==0:
+            if state.get_time()>early_pct*GAME_LENGTH*ORDER_CHANCE/len(pending_orders):
+                besti=0
+                for i in xrange(GRAPH_SIZE):
+                    if self.center[i]*self.edge_count[i]>self.center[besti]*self.edge_count[besti]:
+                        besti=i
+                    commands.append(self.build_command(i))
+                    stations.append(i)        
 
         if len(pending_orders) != 0:
             min_length = sys.maxint
