@@ -109,13 +109,17 @@ class Player(BasePlayer):
         pending_orders = state.get_pending_orders()
 
         for station in self.stations:
-            min_length = sys.maxint
+            max_income = 0
             min_path = None
             min_order = None
             for order in pending_orders:
                 cur_length = nx.shortest_path_length(graph, station, order.get_node())
-                if cur_length < min_length:
-                    min_length = cur_length
+                # if cur_length < min_length:
+                #     min_length = cur_length
+                #     min_path = nx.shortest_path(graph, station, order.get_node())
+                #     min_order = order
+                if order.get_money()-cur_length*DECAY_FACTOR>max_income:
+                    max_income=order.get_money()-cur_length*DECAY_FACTOR
                     min_path = nx.shortest_path(graph, station, order.get_node())
                     min_order = order
             if self.path_is_valid(state, min_path):
