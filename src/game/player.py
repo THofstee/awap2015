@@ -3,6 +3,7 @@ import random
 from base_player import BasePlayer
 from settings import *
 from copy import deepcopy
+from math import *
 import sys
 
 class Player(BasePlayer):
@@ -18,8 +19,8 @@ class Player(BasePlayer):
     lastid = -1
     gamest=0 #0 for early, 1 for mid, 2 for late
 
-    early_pct=0.05
-    all_nodes_scalar=0.1
+    early_pct=0.07
+    all_nodes_scalar=0.0
 
     stations=[]
     station=-1
@@ -81,11 +82,14 @@ class Player(BasePlayer):
         after = self.expected_end(state)
         #print "LAWL"
         #print after
-        self.stations[0:-1]
+        self.stations = self.stations[0:-1]
         return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
     
+    def phi(self,x):
+      return erf(x/sqrt(2.0))
+    
     def mid_best(self, state):
-        c_out = 1000.
+        c_out = 1.*(DECAY_FACTOR/SCORE_MEAN)
         c_ev = 1.
         G = state.get_graph()
         max_v = 0
@@ -95,10 +99,15 @@ class Player(BasePlayer):
             min_d = paths[self.stations[0]][i]
             for j in xrange(len(self.stations)):
                 min_d = min(min_d,paths[self.stations[j]][i])
+            hub_chance = 0
+            for j in xrange(len(self.order_cnt)):
+                hub_chance += self.phi(paths[i][j]*self.order_cnt[j])
+            hub_chance /= self.order_tot
+            hub_chance *= HUBS
             cur_v = 0.0
-            cur_v -= (c_ev*self.centeredness[i]+c_out*G.degree(i))/(min_d+1)
+            cur_v -= (c_ev*hub_chance+c_out*G.degree(i))/(min_d+1)
             cur_v += c_out*G.degree(i)*ORDER_CHANCE
-            cur_v += c_ev*self.centeredness[i]/(ORDER_VAR*ORDER_VAR+1)
+            cur_v += c_ev*hub_chance/(ORDER_VAR*ORDER_VAR+1)
             if (cur_v > max_v):
                 max_v = cur_v
                 max_n = i
@@ -187,7 +196,7 @@ class Player(BasePlayer):
         pending_orders = state.get_pending_orders()
 
         if self.gamest==0:
-            if state.get_time()>self.early_pct*GAME_LENGTH*ORDER_CHANCE/len(pending_orders):
+            if len(pending_orders) != 0 and state.get_time()>self.early_pct*GAME_LENGTH*ORDER_CHANCE/len(pending_orders):
                 besti=0
                 for i in xrange(GRAPH_SIZE):
                     if self.centeredness[i]*self.edge_count[i]>self.centeredness[besti]*self.edge_count[besti]:
@@ -202,9 +211,9 @@ class Player(BasePlayer):
                 toadd = self.mid_best(state)
                 if toadd != -1 and self.should_add(state,toadd):
                     commands.append(self.build_command(toadd))
+                    self.stations.append(toadd)
                 else:
                     break
-                self.stations.append(toadd)
 
         # if len(pending_orders) != 0 and self.station>=0:
         #     min_length = sys.maxint
