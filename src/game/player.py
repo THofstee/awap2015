@@ -65,24 +65,28 @@ class Player(BasePlayer):
             min_d = paths[self.stations[0]][i]
             for j in xrange(len(self.stations)):
                 min_d = min(min_d,paths[self.stations[j]][i])
-            sum += (SCORE_MEAN-min_d*DECAY_FACTOR)*self.order_cnt[i]
+            sum += max(0,(SCORE_MEAN-min_d*DECAY_FACTOR)*self.order_cnt[i])
         sum /= self.order_tot
-        return sum
+        return state.get_money()+sum*ORDER_CHANCE*(GAME_LENGTH-state.get_time())
         
     def can_add(self, state):
         return state.get_money()-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
         
     def should_add(self, state, node):
-        return True
-        #before = self.expected_end(state)
-        #self.order_cnt[node]+=1
-        #after = self.expected_end(state)
-        #self.order_cnt[node]-=1
-        #return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
+        #return True
+        before = self.expected_end(state)
+        #print "LOL"
+        #print before
+        self.stations.append(node)
+        after = self.expected_end(state)
+        #print "LAWL"
+        #print after
+        self.stations[0:-1]
+        return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
     
     def mid_best(self, state):
-        c_out = 1
-        c_ev = 1
+        c_out = 1000.
+        c_ev = 1.
         G = state.get_graph()
         max_v = 0
         max_n = -1
@@ -92,9 +96,9 @@ class Player(BasePlayer):
             for j in xrange(len(self.stations)):
                 min_d = min(min_d,paths[self.stations[j]][i])
             cur_v = 0.0
-            cur_v -= (c_ev*self.centeredness[i]*self.centeredness[i]+c_out*G.degree(i))/(min_d+1)
+            cur_v -= (c_ev*self.centeredness[i]+c_out*G.degree(i))/(min_d+1)
             cur_v += c_out*G.degree(i)*ORDER_CHANCE
-            cur_v += c_ev*self.centeredness[i]*self.centeredness[i]/(ORDER_VAR*ORDER_VAR+1)
+            cur_v += c_ev*self.centeredness[i]/(ORDER_VAR*ORDER_VAR+1)
             if (cur_v > max_v):
                 max_v = cur_v
                 max_n = i
