@@ -34,7 +34,7 @@ class Player(BasePlayer):
         for i in xrange(GRAPH_SIZE):
             center=0
             for j in xrange(GRAPH_SIZE):
-                center+=hub_f(shortest[i][j])*self.all_nodes_scalar
+                center+=self.hub_f(shortest[i][j])*self.all_nodes_scalar
             self.centeredness.append(center)
 
     def hub_update(self, state):
@@ -48,7 +48,7 @@ class Player(BasePlayer):
             #then we have a new order
             shortest=nx.shortest_path_length(G,orders[curri].node)
             for i in xrange(GRAPH_SIZE):
-                self.center[i]+=self.hub_f(shortest[i])
+                self.centeredness[i]+=self.hub_f(shortest[i])
 
     def __init__(self, state):
         """
@@ -91,7 +91,7 @@ class Player(BasePlayer):
         # We recommend making it a bit smarter ;-)
 
         graph = state.get_graph()
-        station = graph.nodes()[0]
+        station = -1
 
         self.hub_update(state)
 
@@ -100,16 +100,19 @@ class Player(BasePlayer):
         commands_sent = 0
         pending_orders = state.get_pending_orders()
 
-        if gamest==0:
-            if state.get_time()>early_pct*GAME_LENGTH*ORDER_CHANCE/len(pending_orders):
+        if self.gamest==0:
+            if state.get_time()>self.early_pct*GAME_LENGTH*ORDER_CHANCE/len(pending_orders):
                 besti=0
                 for i in xrange(GRAPH_SIZE):
-                    if self.center[i]*self.edge_count[i]>self.center[besti]*self.edge_count[besti]:
+                    if self.centeredness[i]*self.edge_count[i]>self.centeredness[besti]*self.edge_count[besti]:
                         besti=i
-                    commands.append(self.build_command(i))
-                    stations.append(i)        
+                commands.append(self.build_command(i))
+                self.stations.append(i)
+                station=i
+                self.gamest=1
 
-        if len(pending_orders) != 0:
+
+        if len(pending_orders) != 0 and station>=0:
             min_length = sys.maxint
             min_path = None
             min_order = None
