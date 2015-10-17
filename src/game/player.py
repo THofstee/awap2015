@@ -64,15 +64,15 @@ class Player(BasePlayer):
         max_v = 0
         max_n = -1
         paths = nx.shortest_path_length(G)
-        for i in xrange(GRAPH_SIZE)
+        for i in xrange(GRAPH_SIZE):
             min_d = paths[stations[0]][i]
-            for j in xrange(len(stations))
+            for j in xrange(len(stations)):
                 min_d = min(min_d,paths[stations[j]][i])
             cur_v = 0.0
             cur_v -= (c_ev*self.centerdness[i]*self.centerdness[i]+c_out*G.degree(i))/(min_d+1)
             cur_v += c_out*G.degree(i)*ORDER_CHANCE
             cur_v += c_ev*self.centerdness[i]*self.centerdness[i]/(ORDER_VAR*ORDER_VAR+1)
-            if (cur_v > max_v)
+            if (cur_v > max_v):
                 max_v = cur_v
                 max_n = id
         return max_n
