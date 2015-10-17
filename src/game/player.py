@@ -49,7 +49,7 @@ class Player(BasePlayer):
         for i in xrange(len(orders)):
             if orders[i].id>orders[curri].id:
                 curri=i
-        if orders[curri].id>self.lastid: 
+        if len(orders)>0 and orders[curri].id>self.lastid: 
             #then we have a new order
             shortest=nx.shortest_path_length(G,orders[curri].node)
             self.order_cnt[orders[curri].node]+=1
@@ -127,7 +127,7 @@ class Player(BasePlayer):
         return [(path[i], path[i + 1]) for i in range(0, len(path) - 1)]
 
     def getOrders(self, state, commands):
-        graph = state.get_graph()
+        graph = deepcopy(state.get_graph())
         pending_orders = state.get_pending_orders()
 
         for station in self.stations:

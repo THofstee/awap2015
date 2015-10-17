@@ -1,2 +1,3 @@
 src/game/player.pyc
+src/game/*.pyc
 *.pyc
