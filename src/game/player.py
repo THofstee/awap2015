@@ -61,23 +61,24 @@ class Player(BasePlayer):
         sum = 0.0
         G = state.get_graph()
         paths = nx.shortest_path_length(G)
-        for i in xrange(len(order_cnt)):
-            min_d = paths[stations[0]][i]
-            for j in xrange(len(stations)):
-                min_d = min(min_d,paths[stations[j]][i])
-            sum += (SCORE_MEAN-min_d*DECAY_FACTOR)*order_cnt[i]
-        sum /= order_tot
+        for i in xrange(len(self.order_cnt)):
+            min_d = paths[self.stations[0]][i]
+            for j in xrange(len(self.stations)):
+                min_d = min(min_d,paths[self.stations[j]][i])
+            sum += (SCORE_MEAN-min_d*DECAY_FACTOR)*self.order_cnt[i]
+        sum /= self.order_tot
         return sum
         
     def can_add(self, state):
-        return state.get_money()-(INIT_BUILD_COST*BUILD_FACTOR**len(stations)) > 0.0
+        return state.get_money()-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
         
     def should_add(self, state, node):
-        before = expected_end(self,state)
-        order_cnt[i]+=1
-        after = expected_end(self,state)
-        order_cnt[i]-=1
-        return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(stations)) > 0.0
+        return True
+        #before = self.expected_end(state)
+        #self.order_cnt[node]+=1
+        #after = self.expected_end(state)
+        #self.order_cnt[node]-=1
+        #return after-before-(INIT_BUILD_COST*BUILD_FACTOR**len(self.stations)) > 0.0
     
     def mid_best(self, state):
         c_out = 1
@@ -87,16 +88,16 @@ class Player(BasePlayer):
         max_n = -1
         paths = nx.shortest_path_length(G)
         for i in xrange(GRAPH_SIZE):
-            min_d = paths[stations[0]][i]
-            for j in xrange(len(stations)):
-                min_d = min(min_d,paths[stations[j]][i])
+            min_d = paths[self.stations[0]][i]
+            for j in xrange(len(self.stations)):
+                min_d = min(min_d,paths[self.stations[j]][i])
             cur_v = 0.0
-            cur_v -= (c_ev*self.centerdness[i]*self.centerdness[i]+c_out*G.degree(i))/(min_d+1)
+            cur_v -= (c_ev*self.centeredness[i]*self.centeredness[i]+c_out*G.degree(i))/(min_d+1)
             cur_v += c_out*G.degree(i)*ORDER_CHANCE
-            cur_v += c_ev*self.centerdness[i]*self.centerdness[i]/(ORDER_VAR*ORDER_VAR+1)
+            cur_v += c_ev*self.centeredness[i]*self.centeredness[i]/(ORDER_VAR*ORDER_VAR+1)
             if (cur_v > max_v):
                 max_v = cur_v
-                max_n = id
+                max_n = i
         return max_n
 
     def __init__(self, state):
@@ -144,7 +145,7 @@ class Player(BasePlayer):
                     max_income=order.get_money()-cur_length*DECAY_FACTOR
                     min_path = nx.shortest_path(graph, station, order.get_node())
                     min_order = order
-            if self.path_is_valid(state, min_path):
+            if min_path != None and self.path_is_valid(state, min_path):
                 commands.append(self.send_command(min_order, min_path))
                 pending_orders.remove(min_order)
                 path_edges = self.path_to_edges(min_path)
@@ -192,6 +193,14 @@ class Player(BasePlayer):
                 self.station=besti
                 self.gamest=1
 
+        if self.gamest==1:
+            while (self.can_add(state)):
+                toadd = self.mid_best(state)
+                if toadd != -1 and self.should_add(state,toadd):
+                    commands.append(self.build_command(toadd))
+                else:
+                    break
+                self.stations.append(toadd)
 
         # if len(pending_orders) != 0 and self.station>=0:
         #     min_length = sys.maxint
